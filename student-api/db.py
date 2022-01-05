@@ -4,7 +4,6 @@ from os import environ
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 
-
 connect_str =\
     'postgresql://{PGUSER}:{PGPASSWORD}@{PGHOST}:{PGPORT}/{PGDATABASE}'\
     .format(**environ)
