@@ -4,27 +4,13 @@ from uuid import uuid4
 from uuid import UUID
 from fastapi import FastAPI, HTTPException, status
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy.sql.expression import select, true
 from db import engine
 from modules import Gender, NewStudents, NewStudents_Patch, TestDB
 from session import JSONResponse
 from db import students as student_table
 
 app = FastAPI()
-###
-
-Students = {"1": {'name': 'ghaid', 'major': 'CS', "gender": "female"},
-            "2": {'name': 'khalid', 'major': 'CiS', "gender": "male"},
-            "3": {'name': 'lina', 'major': 'CS', "gender": "female"},
-            "4": {'name': 'ahmad', 'major': 'CS', "gender": "male"}}
-
-
-def data_input(id: str, student: NewStudents) -> dict:
-    Students[id] = {"name": student.name,
-                    "major": student.major,
-                    "gender": student.gender}
-    return student
-
-##
 
 
 @app.get("/getstudentbyid/{id}")
@@ -62,8 +48,21 @@ def add_student(student: NewStudents) -> JSONResponse:
 @app.delete("/students/{id}")
 def delete_student(id: str):
     with engine.connect() as conn:
-        stmt = student_table.delete().where(student_table.c.id == id)
-        conn.execute(stmt)
+        student = conn.execute(student_table.select().where(
+            student_table.c.id == id)).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f'Student with id: {id} dose not exist'
+            )
+        else:
+            with engine.connect() as conn:
+                delete_students = student_table.delete().where(student_table.c.id == id)
+                conn.execute(delete_students)
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={'item deleted'}
+                )
 
 
 @app.get("/students")
@@ -77,7 +76,7 @@ def get_student(gender: Optional[str] = None, department: Optional[str] = None) 
             status_code=status.HTTP_200_OK,
             content=(TestDB(**student._asdict()) for student in students)
         )
-    if not gender and department:
+    elif not gender and department:
         with engine.connect() as conn:
             students = conn.execute(student_table.select().where(
                 student_table.c.department == department)).fetchall()
@@ -85,7 +84,7 @@ def get_student(gender: Optional[str] = None, department: Optional[str] = None) 
             status_code=status.HTTP_200_OK,
             content=(TestDB(**student._asdict()) for student in students)
         )
-    if gender and department:
+    elif gender and department:
         with engine.connect() as conn:
             students = conn.execute(student_table.select().where(
                 student_table.c.department == department, student_table.c.gender == gender)).fetchall()
@@ -95,12 +94,11 @@ def get_student(gender: Optional[str] = None, department: Optional[str] = None) 
         )
     else:
         with engine.connect() as conn:
-            students = conn.execute(student_table.select().fetchall())
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content=(TestDB(**student._asdict())
-                         for student in students)
-            )
+            students = conn.execute(select(student_table)).fetchall()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=(TestDB(**student._asdict()) for student in students)
+        )
 
 
 @app.put("/putstudent/{id}")
@@ -108,7 +106,7 @@ def put_student(student: NewStudents, id) -> JSONResponse:
     try:
         with engine.begin() as conn:
             updated_student = conn.execute(student_table.update().returning(student_table).where(
-                student_table.c.id == id).values(**student.dict(exclude_none=True), ))
+                student_table.c.id == id).values(**student.dict()))
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={'data': updated_student.first()}
@@ -124,14 +122,14 @@ def put_student(student: NewStudents, id) -> JSONResponse:
 def update_student(student: NewStudents_Patch, id) -> JSONResponse:
     try:
         with engine.begin() as conn:
-            new_student = conn.execute(student_table.update().returning(student_table).where(
-                student_table.c.id == id).values(**student.dict(exclude_none=True)))
+            updated_student = conn.execute(student_table.update().returning(student_table).where(
+                student_table.c.id == id).values(**student.dict(exclude_none=True), updated_at=datetime.now()))
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={'data': new_student.first()}
+                content={'data': updated_student.first()}
             )
     except:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail='AN ERROR CAME UP '
+            detail='BAD DATA'
         )
