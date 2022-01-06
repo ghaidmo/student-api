@@ -44,4 +44,4 @@ services:
       POSTGRES_USER: students
       POSTGRES_PASSWORD: password
     ports:
-      - "33333:5432"
+      - "54321:5432"
