@@ -1,16 +1,22 @@
 from typing import Optional
 from uuid import UUID
-
+from fastapi import APIRouter, HTTPException
 from db import engine, students
-from fastapi import FastAPI, HTTPException, status
+from fastapi import HTTPException, status
 from modules import StudentsPatch, StudentsPost, StudentsPut, StudentsResponse
 from session import JSONResponse
-from sqlalchemy.exc import IntegrityError
-
-app = FastAPI()
+from sqlalchemy.exc import IntegrityError, IntegrityError
 
 
-@app.get('/students/{id}')
+router = APIRouter(
+    prefix="/students",
+    tags=["students"],
+    # dependencies=[Depends(get_token_header)],
+    responses={404: {"description": "Not found"}},
+)
+
+
+@router.get('/{id}', tags=["students"])
 def get_student_by_id(id: UUID) -> JSONResponse:
     with engine.connect() as conn:
         student_data = conn.execute(students.select().where(
@@ -26,7 +32,7 @@ def get_student_by_id(id: UUID) -> JSONResponse:
     )
 
 
-@app.post('/student', response_model=StudentsResponse)
+@router.post('/', response_model=StudentsResponse, tags=["students"])
 def add_student(student: StudentsPost) -> JSONResponse:
     try:
         with engine.begin() as conn:
@@ -43,7 +49,7 @@ def add_student(student: StudentsPost) -> JSONResponse:
     )
 
 
-@app.delete('/students/{id}')
+@router.delete('/{id}', tags=["students"])
 def delete_student(id: UUID) -> JSONResponse:
     with engine.connect() as conn:
         student_deleted = conn.execute(
@@ -60,7 +66,7 @@ def delete_student(id: UUID) -> JSONResponse:
     )
 
 
-@app.get('/students', response_model=StudentsResponse)
+@router.get('/', response_model=StudentsResponse, tags=["students"])
 def get_student(gender: Optional[str] = None,
                 department: Optional[str] = None) -> JSONResponse:
     sel = None
@@ -88,7 +94,7 @@ def get_student(gender: Optional[str] = None,
     )
 
 
-@app.put("/student/{id}", response_model=StudentsResponse)
+@router.put("/{id}", response_model=StudentsResponse, tags=["students"])
 def put_student(student: StudentsPut, student_id: UUID) -> JSONResponse:
     with engine.begin() as conn:
         deleted_student = conn.execute(students.delete().where(
@@ -108,7 +114,7 @@ def put_student(student: StudentsPut, student_id: UUID) -> JSONResponse:
                         })
 
 
-@app.patch("/student/{id}", response_model=StudentsResponse)
+@router.patch("/{id}", response_model=StudentsResponse, tags=["students"])
 def update_student(student: StudentsPatch, student_id: UUID) -> JSONResponse:
     with engine.begin() as conn:
         updated_student = conn.execute(students.update().where(

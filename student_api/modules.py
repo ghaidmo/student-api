@@ -35,3 +35,14 @@ class StudentsResponse(BaseModel):
     birth_date: datetime
     created_at: datetime
     updated_at: datetime
+
+
+class AddressPost(BaseModel):
+    email: str = Field(example='username@host.com', max_length=50)
+    user_id: UUID
+
+
+class AddressResponse(BaseModel):
+    email_id: UUID = Field(example=1234)
+    email: str
+    user_id: UUID

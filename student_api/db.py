@@ -3,6 +3,8 @@ from os import environ
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql.schema import ForeignKey
+
 
 connect_str =\
     'postgresql://{PGUSER}:{PGPASSWORD}@{PGHOST}:{PGPORT}/{PGDATABASE}'\
@@ -24,7 +26,7 @@ students = sa.Table(
     'students',
     metadata,
     sa.Column('id', UUID(as_uuid=True),
-              nullable=False, server_default=new_uuid),
+              nullable=False, server_default=new_uuid, primary_key=True, unique=True),
     sa.Column('name', sa.String, nullable=False),
     sa.Column("gender", sa.String),
     sa.Column("state", sa.String),
@@ -34,9 +36,12 @@ students = sa.Table(
     sa.Column('updated_at', sa.DateTime, nullable=False,
               onupdate=now, **default_now),
 )
+addresses = sa.Table(
+    'addresses',
+    metadata,
+    sa.Column('email_id', UUID(as_uuid=True),
+              nullable=False, server_default=new_uuid, primary_key=True),
+    sa.Column('email', sa.String, nullable=False, unique=True),
+    sa.Column('user_id', UUID, ForeignKey("students.id"), nullable=False),
 
-
-with engine.begin() as conn:
-    conn.execute(sa.text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
-
-metadata.create_all(engine)
+)

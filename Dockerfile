@@ -5,6 +5,8 @@ FROM base AS build
 RUN apt-get update \
     && apt-get install libpq-dev gcc git make -y
 
+
+
 WORKDIR /tmp
 
 ENV PATH=/opt/local/bin:$PATH
@@ -26,9 +28,9 @@ WORKDIR /app
 COPY . /app
 
 ENV PATH=/opt/local/bin:$PATH \
-    PYTHONPATH=/opt/local/lib/python3.9/site-packages:/app/student-api
+    PYTHONPATH=/opt/local/lib/python3.9/site-packages:/app/student_api
 
 
 EXPOSE 80
 
-CMD ["uvicorn", "--reload", "--workers", "1", "--host", "0.0.0.0", "--port", "80", "student-api.main:app"]
+CMD ["uvicorn", "--reload", "--workers", "1", "--host", "0.0.0.0", "--port", "80", "student_api.main:app"]

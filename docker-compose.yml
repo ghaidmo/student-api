@@ -33,7 +33,7 @@ services:
         "0.0.0.0",
         "--port",
         "80",
-        "student-api.main:app"
+        "student_api.main:app"
       ]
   students-postgres:
     container_name: students-postgres

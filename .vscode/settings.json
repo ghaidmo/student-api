@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./student_api",
+        "./student_api/routers"
+    ]
+}
